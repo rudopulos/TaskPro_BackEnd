@@ -1,40 +1,32 @@
 const bcrypt = require("bcrypt");
 const crypto = require("crypto");
+const mongoose = require("mongoose");
+
 const jwt = require("jsonwebtoken");
 const User = require("../models/user");
 const HttpError = require("../helpers/HttpError");
 const sendEmail = require("../helpers/sendEmail");
 const controllerWrapper = require("../helpers/decorators");
 
-const { ACCESS_TOKEN_KEY, REFRESH_TOKEN_KEY } = process.env;
+const { ACCESS_TOKEN_KEY, REFRESH_TOKEN_KEY, JWT_SECRET } = process.env;
 
-function generateToken() {
-  return crypto.randomBytes(32).toString("hex"); // Generează un string hex de 64 de caractere
+function generateToken(userId) {
+  try {
+    // Generating a token using userId
+    const token = jwt.sign({ userId }, JWT_SECRET, { expiresIn: "1h" });
+
+    return token;
+  } catch (error) {
+    console.error("Error generating token:", error);
+    throw new Error("Failed to generate token.");
+  }
 }
 
-async function register(req, res) {
-  const { email, password } = req.body;
-  const user = await User.findOne({ email });
-  if (user) {
-    return res.status(409).json({ message: "Email is already in use" });
-  }
-  const hashedPassword = await bcrypt.hash(password, 10);
-  const avatarURL = "";
+// Function to send the confirmation email
+async function sendConfirmationEmail(userId, email) {
+  const validationToken = generateToken(userId);
+  const confirmationLink = `http://localhost:5000/api/users/confirm?userId=${userId}&token=${validationToken}`;
 
-  // Generate a confirmation token
-  const confirmationToken = generateToken();
-
-  const newUser = await User.create({
-    ...req.body,
-    password: hashedPassword,
-    avatarURL,
-    confirmationToken,
-  });
-
-  // Build the confirmation link
-  const confirmationLink = `http://localhost:5000/confirm?token=${confirmationToken}`;
-
-  // Email data
   const emailData = {
     to: email,
     subject: "Registration Confirmation",
@@ -42,46 +34,95 @@ async function register(req, res) {
     html: `<p>Welcome to our site! Please <a href="${confirmationLink}">confirm your registration</a>.</p>`,
   };
 
-  // Send the email
+  await sendEmail(emailData);
+  console.log("Confirmation email sent successfully.");
+}
+
+// Function to register a new user
+async function register(req, res) {
+  const { name, email, password } = req.body;
+
+  // Check if the email is already in use
+  const existingUser = await User.findOne({ email });
+  if (existingUser) {
+    return res.status(409).json({ message: "Email is already in use" });
+  }
+
+  // Hash the password
+  const hashedPassword = await bcrypt.hash(password, 10);
+
+  // Generate a confirmation token
+  // const confirmationToken = generateToken();
+
+  // Create the new user with confirmation token
+  const newUser = new User({
+    name,
+    email,
+    password: hashedPassword,
+    emailConfirmed: false,
+  });
+
+  // Send the confirmation email
   try {
-    await sendEmail(emailData);
-    console.log("Confirmation email sent successfully.");
+    await newUser.save();
+
+    // Send the confirmation email with user's ID and validation token
+    await sendConfirmationEmail(newUser._id, email);
+
     res.status(201).json({
       email: newUser.email,
       message:
         "Registration successful! Please check your email to confirm your account.",
     });
   } catch (error) {
-    console.error("Failed to send the confirmation email:", error);
-    res.status(500).json({ message: "Failed to send confirmation email" });
+    console.error("Failed to register user:", error);
+    res.status(500).json({ message: "Failed to register user" });
   }
 }
+// Function to confirm a user's email
+async function confirmEmail(userId, token) {
+  try {
+    // Verify the token and extract the payload
+    const decoded = jwt.verify(token, JWT_SECRET);
 
-const confirmEmail = async (token) => {
-  // Încercăm să găsim utilizatorul pe baza tokenului primit
-  const user = await User.findOne({ confirmationToken: token });
+    // Check if the decoded payload contains the correct userId
+    if (decoded.userId !== userId) {
+      throw new Error("Invalid token.");
+    }
 
-  // Dacă nu găsim niciun utilizator cu acest token, aruncăm o eroare
-  if (!user) {
-    throw new Error("User not found or token is invalid.");
+    // Find the user by userId
+    const user = await User.findById(userId);
+
+    if (!user) {
+      throw new Error("User not found.");
+    }
+
+    // Update the user's emailConfirmed status only if it's not already confirmed
+    if (!user.emailConfirmed) {
+      user.emailConfirmed = true;
+      await user.save();
+    }
+
+    return user;
+  } catch (error) {
+    console.error("Error confirming email:", error);
+    throw error; // Re-throw the error to handle it at a higher level if needed
   }
-
-  // Actualizăm utilizatorul ca fiind confirmat și eliminăm tokenul de confirmare
-  user.emailConfirmed = true;
-  user.confirmationToken = null; // Setăm tokenul la null pentru a preveni reutilizarea acestuia
-
-  // Salvăm modificările făcute asupra utilizatorului
-  await user.save();
-
-  return user;
-};
-
+}
 async function login(req, res) {
   const { email, password } = req.body;
   const user = await User.findOne({ email });
   if (!user) {
     throw HttpError(401, "Email or password is wrong");
   }
+
+  // if (!user.emailConfirmed) {
+  //   throw HttpError(
+  //     403,
+  //     "Email not confirmed. Please confirm your email first."
+  //   );
+  // }
+
   const isValidPassword = await bcrypt.compare(password, user.password);
   if (!isValidPassword) {
     throw HttpError(401, "Email or password is wrong");

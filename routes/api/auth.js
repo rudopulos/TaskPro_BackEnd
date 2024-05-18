@@ -10,9 +10,8 @@ const {
   getHelpEmail,
 } = require("../../controllers/auth");
 
-// const User = require("../../models/user");
+const User = require("../../models/user");
 const { confirmEmail } = require("../../controllers/auth");
-
 const validateBody = require("../../middlewares/validateBody");
 const authenticate = require("../../middlewares/authenticate");
 const schemas = require("../../models/validation-schemas/user-validation");
@@ -22,18 +21,16 @@ const router = express.Router();
 
 router.post("/register", validateBody(schemas.registerSchema), register);
 
-// Route pentru confirmarea emailului
 router.get("/confirm", async (req, res) => {
+  const { userId, token } = req.query;
+
   try {
-    const user = await confirmEmail(req.query.token);
-    console.log(`User ${user.email} has been confirmed.`);
-    res.send("Your account has been successfully confirmed!");
+    await confirmEmail(userId, token);
+    res.send("Email confirmed successfully!");
   } catch (error) {
-    console.error(`Error confirming user: ${error}`);
-    res.status(400).send(error.message);
+    res.status(400).send("Error confirming email: " + error.message);
   }
 });
-
 router.post("/login", validateBody(schemas.loginSchema), login);
 
 router.post("/refresh", validateBody(schemas.refreshSchema), refresh);
