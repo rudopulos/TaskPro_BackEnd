@@ -6,8 +6,9 @@ const { DB_HOST } = process.env;
 mongoose
   .connect(DB_HOST)
   .then(() => {
-    app.listen(5000, () => {
-      console.log("Database connection successful");
+    const port = process.env.PORT || 5000;
+    app.listen(port, () => {
+      console.log(`Database connection successful. Listening on port ${port}`);
     });
   })
   .catch((error) => {
