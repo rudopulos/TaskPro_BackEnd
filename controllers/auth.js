@@ -8,12 +8,12 @@ const HttpError = require("../helpers/HttpError");
 const sendEmail = require("../helpers/sendEmail");
 const controllerWrapper = require("../helpers/decorators");
 
-const { ACCESS_TOKEN_KEY, REFRESH_TOKEN_KEY, JWT_SECRET } = process.env;
+const { ACCESS_TOKEN_KEY, REFRESH_TOKEN_KEY } = process.env;
 
 function generateToken(userId) {
   try {
     // Generating a token using userId
-    const token = jwt.sign({ userId }, JWT_SECRET, { expiresIn: "1h" });
+    const token = jwt.sign({ userId }, ACCESS_TOKEN_KEY, { expiresIn: "1h" });
 
     return token;
   } catch (error) {
@@ -83,7 +83,7 @@ async function register(req, res) {
 async function confirmEmail(userId, token) {
   try {
     // Verify the token and extract the payload
-    const decoded = jwt.verify(token, JWT_SECRET);
+    const decoded = jwt.verify(token, ACCESS_TOKEN_KEY);
 
     // Check if the decoded payload contains the correct userId
     if (decoded.userId !== userId) {
