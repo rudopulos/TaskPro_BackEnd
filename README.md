@@ -1,23 +1,39 @@
-BackEnd for TaskPro project
+# TaskPro Backend API
 
-Description:
-It's final, course team project. Our tasks were build WEB-app from scratch.
+A robust Node.js and Express backend for the TaskPro management application, featuring secure authentication, resource ownership management, and integrated cloud storage.
 
-For BackEnd we used Node.js environment. As a database we used MongoDB for storage, and
-Mongoose as a library for interaction with DB. For routing we use Express framework.
-Also we implement possibility for saving user pictures in Cloudinary service.
-Work with user mail's realized with nodemailer package and special account for this project.
+## 🚀 Technologies Used
+- **Runtime:** Node.js
+- **Framework:** Express.js
+- **Database:** MongoDB with Mongoose ODM
+- **Security:** JWT (Access & Refresh tokens), Bcrypt password hashing
+- **Storage:** Cloudinary (for user avatars and dashboard backgrounds)
+- **Communication:** Nodemailer (for help requests and account confirmations)
+- **Documentation:** Swagger UI
 
-How to clone project:
+## 🛠 Features
+- **User Authentication:** Registration, login, and secure session management with token rotation.
+- **Resource Management:** Create and manage Dashboards, Columns, and Cards with strict ownership verification.
+- **Drag & Drop API:** Optimized endpoints for reordering cards and moving them between columns.
+- **Profile Customization:** Support for user avatars and custom UI themes.
+- **Automated Emailing:** Send confirmation emails and support requests via dedicated mail service.
 
-1. clone repository;
-2. write npm i in terminal;
-3. add .env file to your project;
-4. next environmental variables are required:
+## ⚙️ Setup Instructions
+1.  **Clone the repository:**
+    ```bash
+    git clone https://github.com/rudopulos/TaskPro_BackEnd.git
+    ```
+2.  **Install dependencies:**
+    ```bash
+    npm install
+    ```
+3.  **Environment Variables:**
+    -   Copy `.env.example` to a new file named `.env`.
+    -   Fill in your MongoDB connection string, JWT secrets, Cloudinary credentials, and Email settings.
+4.  **Run the application:**
+    -   Development: `npm run start:dev`
+    -   Production: `npm run start`
 
-- DB_HOST - your database connection link
-- ACCESS_TOKEN_KEY - your key for access token
-- REFRESH_TOKEN_KEY - your key for refresh token, for longer connection
-- CLOUD_NAME , CLOUDINARY_API_KEY , CLOUDINARY_API_SECRET_KEY , CLOUDINARY_URL - your settings for cloudinary
-  connection, where dashboard backgrounds and user avatars stored
-- EMAIL_USERNAME , EMAIL_PASSWORD - settings for help window message in app.
+## 📚 API Documentation
+Once the server is running, you can explore and test the API endpoints using the Swagger documentation:
+`http://localhost:5000/api-docs`

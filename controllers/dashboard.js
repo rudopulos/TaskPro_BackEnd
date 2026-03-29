@@ -12,9 +12,10 @@ async function getAll(req, res) {
 
 async function getById(req, res) {
   const { dashboardId } = req.params;
-  const dashboard = await Dashboard.findById(dashboardId);
+  const { _id: owner } = req.user;
+  const dashboard = await Dashboard.findOne({ _id: dashboardId, owner });
   if (!dashboard) {
-    return res.status(404).json({ message: "Dashboard not found" });
+    throw HttpError(404, "Dashboard not found or access denied");
   }
 
   const columns = await Column.find({ owner: dashboard._id });
@@ -54,26 +55,30 @@ async function addNew(req, res) {
 
 async function removeById(req, res) {
   const { dashboardId } = req.params;
-  const deletedBoard = await Dashboard.findByIdAndRemove(dashboardId);
+  const { _id: owner } = req.user;
+  const deletedBoard = await Dashboard.findOneAndRemove({ _id: dashboardId, owner });
+  if (!deletedBoard) throw HttpError(404, "Dashboard not found or access denied");
+
   const columns = await Column.find({ owner: dashboardId });
-  const deletedColumn = await Column.deleteMany({ owner: dashboardId });
+  await Column.deleteMany({ owner: dashboardId });
   const ArrayColumnsIds = columns.map((column) => column._id);
-  const deletedCard = await Card.deleteMany({ owner: ArrayColumnsIds });
-  if (!deletedBoard || !deletedColumn || !deletedCard || !columns)
-    throw HttpError(404);
+  await Card.deleteMany({ owner: { $in: ArrayColumnsIds } });
+
   res.json({
-    deletedBoard,
-    deletedColumn,
-    deletedCard,
+    message: "Dashboard and all related content deleted successfully",
+    deletedBoardId: dashboardId
   });
 }
 
 async function updateById(req, res) {
   const { dashboardId } = req.params;
-  const result = await Dashboard.findByIdAndUpdate(dashboardId, req.body, {
-    new: true,
-  });
-  if (!result) throw HttpError(404);
+  const { _id: owner } = req.user;
+  const result = await Dashboard.findOneAndUpdate(
+    { _id: dashboardId, owner },
+    req.body,
+    { new: true }
+  );
+  if (!result) throw HttpError(404, "Dashboard not found or access denied");
   res.json(result);
 }
 

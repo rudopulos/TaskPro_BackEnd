@@ -2,13 +2,18 @@ const HttpError = require("../helpers/HttpError");
 const controllerWrapper = require("../helpers/decorators");
 const Card = require("../models/card");
 const Column = require("../models/column");
+const Dashboard = require("../models/dashboard");
 
 async function getById(req, res) {
   const { columnId } = req.params;
-  const column = await Column.findById(columnId);
-  if (!column) throw HttpError(404);
+  const { _id: userId } = req.user;
+
+  const column = await Column.findById(columnId).populate("owner");
+  if (!column || !column.owner.owner.equals(userId)) {
+    throw HttpError(404, "Column not found or access denied");
+  }
+
   const cards = await Card.find({ owner: column._id });
-  if (!cards) throw HttpError(404);
   res.json({
     column,
     cards,
@@ -17,6 +22,14 @@ async function getById(req, res) {
 
 async function addNew(req, res) {
   const { dashboardId } = req.params;
+  const { _id: userId } = req.user;
+
+  // Verify dashboard ownership
+  const dashboard = await Dashboard.findOne({ _id: dashboardId, owner: userId });
+  if (!dashboard) {
+    throw HttpError(404, "Dashboard not found or access denied");
+  }
+
   const result = await Column.create({
     ...req.body,
     owner: dashboardId,
@@ -26,17 +39,34 @@ async function addNew(req, res) {
 
 async function removeById(req, res) {
   const { columnId } = req.params;
-  const result = await Column.findByIdAndRemove(columnId);
-  if (!result) throw HttpError(404);
-  res.json(result);
+  const { _id: userId } = req.user;
+
+  const column = await Column.findById(columnId).populate("owner");
+  if (!column || !column.owner.owner.equals(userId)) {
+    throw HttpError(404, "Column not found or access denied");
+  }
+
+  await Column.findByIdAndRemove(columnId);
+  await Card.deleteMany({ owner: columnId });
+
+  res.json({
+    message: "Column and its cards deleted successfully",
+    deletedColumnId: columnId,
+  });
 }
 
 async function updateById(req, res) {
   const { columnId } = req.params;
+  const { _id: userId } = req.user;
+
+  const column = await Column.findById(columnId).populate("owner");
+  if (!column || !column.owner.owner.equals(userId)) {
+    throw HttpError(404, "Column not found or access denied");
+  }
+
   const result = await Column.findByIdAndUpdate(columnId, req.body, {
     new: true,
   });
-  if (!result) throw HttpError(404);
   res.json(result);
 }
 
