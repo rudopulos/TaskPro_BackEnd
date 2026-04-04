@@ -13,7 +13,7 @@ async function getById(req, res) {
     populate: { path: "owner" },
   });
 
-  if (!card || !card.owner.owner.owner.equals(userId)) {
+  if (!card || !card.owner?.owner?.owner?.equals(userId)) {
     throw HttpError(404, "Card not found or access denied");
   }
 
@@ -26,7 +26,7 @@ async function addNew(req, res) {
 
   // Verify column and dashboard ownership
   const column = await Column.findById(columnId).populate("owner");
-  if (!column || !column.owner.owner.equals(userId)) {
+  if (!column || !column.owner?.owner?.equals(userId)) {
     throw HttpError(404, "Column not found or access denied");
   }
 
@@ -46,7 +46,7 @@ async function removeById(req, res) {
     populate: { path: "owner" },
   });
 
-  if (!card || !card.owner.owner.owner.equals(userId)) {
+  if (!card || !card.owner?.owner?.owner?.equals(userId)) {
     throw HttpError(404, "Card not found or access denied");
   }
 
@@ -63,7 +63,7 @@ async function updateById(req, res) {
     populate: { path: "owner" },
   });
 
-  if (!card || !card.owner.owner.owner.equals(userId)) {
+  if (!card || !card.owner?.owner?.owner?.equals(userId)) {
     throw HttpError(404, "Card not found or access denied");
   }
 
@@ -87,13 +87,13 @@ async function setNewCardOwner(req, res) {
     populate: { path: "owner" },
   });
 
-  if (!card || !card.owner.owner.owner.equals(userId)) {
+  if (!card || !card.owner?.owner?.owner?.equals(userId)) {
     throw HttpError(404, "Card not found or access denied");
   }
 
   // Verify destination column ownership
   const destinationColumn = await Column.findById(destinationColumnId).populate("owner");
-  if (!destinationColumn || !destinationColumn.owner.owner.equals(userId)) {
+  if (!destinationColumn || !destinationColumn.owner?.owner?.equals(userId)) {
     throw HttpError(404, "Destination column not found or access denied");
   }
 

@@ -30,7 +30,12 @@ app.use("/api/column", columnRouter);
 
 app.use("/api/card", cardRouter);
 
+app.get("/health", (req, res) => {
+  res.status(200).json({ status: "ok", timestamp: new Date().toISOString() });
+});
+
 app.use((req, res, next) => {
+
   if (!res.headersSent) {
     res.status(404).json({ message: "Not found on 5000" });
   } else {

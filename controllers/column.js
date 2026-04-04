@@ -9,7 +9,7 @@ async function getById(req, res) {
   const { _id: userId } = req.user;
 
   const column = await Column.findById(columnId).populate("owner");
-  if (!column || !column.owner.owner.equals(userId)) {
+  if (!column || !column.owner?.owner?.equals(userId)) {
     throw HttpError(404, "Column not found or access denied");
   }
 
@@ -42,7 +42,7 @@ async function removeById(req, res) {
   const { _id: userId } = req.user;
 
   const column = await Column.findById(columnId).populate("owner");
-  if (!column || !column.owner.owner.equals(userId)) {
+  if (!column || !column.owner?.owner?.equals(userId)) {
     throw HttpError(404, "Column not found or access denied");
   }
 
@@ -60,7 +60,7 @@ async function updateById(req, res) {
   const { _id: userId } = req.user;
 
   const column = await Column.findById(columnId).populate("owner");
-  if (!column || !column.owner.owner.equals(userId)) {
+  if (!column || !column.owner?.owner?.equals(userId)) {
     throw HttpError(404, "Column not found or access denied");
   }
 
